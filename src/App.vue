@@ -91,6 +91,19 @@ button {
   vertical-align: middle;
 }
 
+.wd-button__content,
+.wd-button__text {
+  min-width: 0;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wd-button__text {
+  gap: 8rpx;
+}
+
 button:focus-visible,
 [role='button']:focus-visible {
   outline: 4rpx solid rgba(79, 70, 229, 0.32);

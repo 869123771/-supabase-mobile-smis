@@ -90,7 +90,9 @@ export function getStoragePublicUrl(bucket: string, objectPath: string) {
 }
 
 export async function uploadFile(filePath: string, token: string, folder = 'smis/mobile') {
-  const ext = filePath.split('.').pop()?.toLowerCase() || 'jpg'
+  const cleanPath = filePath.split('?')[0] || filePath
+  const rawExtension = cleanPath.includes('.') ? cleanPath.slice(cleanPath.lastIndexOf('.') + 1).toLowerCase() : 'jpg'
+  const ext = ['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(rawExtension) ? rawExtension : 'jpg'
   const objectPath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`
   const url = `${trimSlash(SUPABASE_URL)}/storage/v1/object/attachments/${objectPath}`
   return new Promise<string>((resolve, reject) => {

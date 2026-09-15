@@ -1,0 +1,1 @@
+import{U as a,Y as s,at as i}from"./index-BYC5vnYG.js";import{t}from"./SmisTaskDetailView.Pn3Xkbic.js";var e=s({__name:"detail",setup:s=>(s,e)=>(i(),a(t,{kind:"inspection"}))});export{e as default};

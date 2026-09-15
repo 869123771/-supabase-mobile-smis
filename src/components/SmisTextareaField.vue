@@ -40,25 +40,23 @@ const model = computed({
       </text>
       <text v-if="hint" class="smis-textarea-field__hint">{{ hint }}</text>
     </view>
-    <wd-textarea
+    <textarea
       v-model="model"
-      custom-class="smis-textarea-field__control"
-      custom-textarea-class="smis-textarea-field__input"
-      :prop="prop"
-      clearable
-      show-word-limit
-      no-border
+      class="smis-textarea-field__input"
+      :name="prop"
       :disabled="disabled"
       :maxlength="maxlength"
       :placeholder="placeholder"
     />
+    <text class="smis-textarea-field__count">{{ model.length }}/{{ maxlength }}</text>
   </view>
 </template>
 
 <style scoped lang="scss">
 .smis-textarea-field {
+  position: relative;
   box-sizing: border-box;
-  padding: 18rpx;
+  padding: 18rpx 18rpx 16rpx;
   overflow: hidden;
   border: 1rpx solid var(--smis-control-border);
   border-radius: var(--smis-control-radius);
@@ -103,41 +101,35 @@ const model = computed({
   white-space: nowrap;
 }
 
-:deep(.smis-textarea-field__control) {
-  padding: 0 !important;
-  background: transparent !important;
+.smis-textarea-field__input {
+  display: block;
+  width: 100%;
+  height: 126rpx;
+  min-height: 126rpx;
+  margin: 0;
+  padding: 0 0 34rpx;
+  border: 0;
+  color: var(--smis-text);
+  background: transparent;
+  font-family: inherit;
+  font-size: 23rpx;
+  line-height: 1.55;
+  resize: none;
+  outline: none;
 }
 
-:deep(.smis-textarea-field__control .wd-textarea__value) {
-  padding-bottom: 34rpx !important;
-  background: transparent !important;
-}
-
-:deep(.smis-textarea-field__control .smis-textarea-field__input) {
-  width: 100% !important;
-  height: 112rpx !important;
-  min-height: 112rpx !important;
-  color: var(--smis-text) !important;
-  font-size: 23rpx !important;
-  line-height: 1.55 !important;
-}
-
-:deep(.smis-textarea-field__control .wd-textarea__count) {
-  right: 0 !important;
-  bottom: 0 !important;
-  color: var(--smis-text-muted) !important;
-  background: transparent !important;
-  font-size: 17rpx !important;
+.smis-textarea-field__count {
+  position: absolute;
+  right: 18rpx;
+  bottom: 15rpx;
+  color: var(--smis-text-muted);
+  font-size: 17rpx;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-:deep(.smis-textarea-field__control .wd-textarea__clear) {
-  color: var(--smis-text-muted) !important;
-  background: transparent !important;
-}
-
-.smis-textarea-field--compact :deep(.smis-textarea-field__control .smis-textarea-field__input) {
-  height: 88rpx !important;
-  min-height: 88rpx !important;
+.smis-textarea-field--compact .smis-textarea-field__input {
+  height: 96rpx;
+  min-height: 96rpx;
 }
 </style>

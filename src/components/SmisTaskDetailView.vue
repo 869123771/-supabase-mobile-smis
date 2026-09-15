@@ -215,7 +215,6 @@ onLoad((query) => load(String(query?.id || '')))
 .result-actions :deep(.result-button.is-abnormal) { border-color: rgba(174, 55, 53, .14) !important; color: var(--smis-danger) !important; background: #fbe9e8 !important; }
 .check-item__remark { margin-top: 14rpx; }
 .summary-field { margin-top: 18rpx; padding: 24rpx; }
-.summary-textarea { border: 0; background: transparent; padding: 0; }
 .action-bar { position: fixed; z-index: 20; left: 50%; right: auto; bottom: 0; width: min(100%, 520px); box-sizing: border-box; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); background: rgba(255,255,255,.95); box-shadow: 0 -10rpx 30rpx rgba(31,59,76,.10); transform: translateX(-50%); backdrop-filter: blur(24rpx); display: grid; grid-template-columns: 1fr 1.6fr; gap: 14rpx; }
 .action-bar :deep(.wd-button) { width: 100% !important; height: 88rpx !important; margin: 0 !important; border-radius: 18rpx !important; font-size: 23rpx !important; font-weight: 800 !important; }
 .action-bar :deep(.save-action) { border-color: transparent !important; color: var(--smis-primary) !important; background: #e9f0f4 !important; }

@@ -4,6 +4,7 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string
   readonly VITE_SUPABASE_KEY: string
   readonly VITE_AMAP_KEY?: string
+  readonly VITE_AMAP_SECURITY_JS_CODE?: string
 }
 
 interface ImportMeta {

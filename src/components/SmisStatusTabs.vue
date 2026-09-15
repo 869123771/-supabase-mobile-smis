@@ -1,17 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 export interface StatusTab {
   label: string
   value: string
 }
 
-withDefaults(defineProps<{ modelValue: string; tabs: StatusTab[]; embedded?: boolean }>(), { embedded: false })
+const ALL_TAB_VALUE = '__all__'
+const props = withDefaults(defineProps<{ modelValue: string; tabs: StatusTab[]; embedded?: boolean }>(), { embedded: false })
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+
+const activeValue = computed(() => props.modelValue || ALL_TAB_VALUE)
+
+function updateValue(value: string | number) {
+  const nextValue = String(value)
+  emit('update:modelValue', nextValue === ALL_TAB_VALUE ? '' : nextValue)
+}
 </script>
 
 <template>
   <view class="status-tabs" :class="{ 'surface-card': !embedded, 'status-tabs--embedded': embedded }">
     <wd-tabs
-      :model-value="modelValue"
+      :model-value="activeValue"
       custom-class="status-tabs__control"
       color="#4f46e5"
       inactive-color="#66738a"
@@ -19,9 +29,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
       :line-width="22"
       slidable="always"
       :show-scrollbar="false"
-      @update:model-value="emit('update:modelValue', String($event))"
+      @update:model-value="updateValue"
     >
-      <wd-tab v-for="tab in tabs" :key="tab.value" :name="tab.value" :title="tab.label" />
+      <wd-tab v-for="tab in tabs" :key="tab.value || ALL_TAB_VALUE" :name="tab.value || ALL_TAB_VALUE" :title="tab.label" />
     </wd-tabs>
   </view>
 </template>

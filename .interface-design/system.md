@@ -82,10 +82,12 @@ Avoid negative-margin card overlaps below headers. Summary cards begin after the
 - Photo upload is a first-class evidence area with clear count and removable thumbnails.
 - Use `SmisLocationField` for automatic location capture, editable detail text and an embedded point preview; avoid launching an unstyled system location page.
 - Use `SmisEvidenceUpload` for camera/album selection, upload progress, quota, preview and removal.
+- Evidence upload keeps local previews visible while uploading and provides an in-place retry state on failure; H5 blob URLs never determine the remote object extension directly.
 - Site selection uses the tenant-wide hierarchy. Organization assignment and physical site selection are related business facts, but a department without directly-owned sites must not produce an empty picker.
 - Primary submit action comes last and is not obscured by bottom navigation.
 - Multiline fields use `SmisTextareaField`: visible label/hint, inset control tone, explicit native-textarea height, compact character-count rail and a focus-within ring. Use the compact variant for secondary notes and abnormal-item remarks.
 - On tab-root forms, keep the primary submit action in a translucent dock immediately above bottom navigation and reserve both layers in page padding.
+- Picker and sheet overlays must render above fixed submission docks and bottom navigation; tab-root pickers use the shared overlay tier rather than the component-library default.
 
 ### Button alignment
 

@@ -1,1 +1,0 @@
-import{Y as t,dt as a,tt as s}from"./index-Boj53ZV6.js";import{t as i}from"./SmisTaskDetailView.BhHhfsIk.js";var e=s({__name:"detail",setup:s=>(s,e)=>(a(),t(i,{kind:"inspection"}))});export{e as default};

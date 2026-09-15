@@ -117,7 +117,7 @@ onShow(load)
 
 <template>
   <view class="page-shell report-page">
-    <SmisTopBar title="现场随手拍" eyebrow="QUICK HAZARD REPORT" subtitle="拍照留证，隐患直达闭环" />
+    <SmisTopBar title="现场随手拍" eyebrow="QUICK HAZARD REPORT" subtitle="拍照留证，隐患直达闭环" show-back />
 
     <view class="page-body report-body">
       <view v-if="loading" class="loading surface-card" aria-live="polite">
@@ -148,6 +148,7 @@ onShow(load)
                 required
                 clearable
                 root-portal
+                :z-index="80"
                 :columns="organizationOptions"
                 value-key="value"
                 label-key="label"
@@ -162,6 +163,7 @@ onShow(load)
                 required
                 clearable
                 root-portal
+                :z-index="80"
                 :disabled="!siteOptions.length"
                 :columns="siteOptions"
                 value-key="value"
@@ -190,6 +192,7 @@ onShow(load)
                 prop="hazardLevel"
                 required
                 root-portal
+                :z-index="80"
                 :columns="hazardLevelOptions"
                 value-key="value"
                 label-key="label"
@@ -215,7 +218,7 @@ onShow(load)
           </SmisFormSection>
         </wd-form>
 
-        <SmisFormSection title="现场证据" description="照片会进入后续核准、整改与验收记录" icon="camera">
+        <SmisFormSection class="report-evidence" title="现场证据" description="照片会进入后续核准、整改与验收记录" icon="camera">
           <SmisEvidenceUpload
             v-model="form.imageUrls"
             v-model:uploading="uploading"
@@ -266,6 +269,7 @@ onShow(load)
 :deep(.smis-form-control .wd-cell__title) { color: var(--smis-text-secondary); font-size: 21rpx; font-weight: 700; }
 :deep(.smis-form-control .wd-cell__value) { color: var(--smis-text); font-size: 24rpx; }
 .option-warning { padding: 16rpx; border-radius: 14rpx; background: #fff7e8; color: #9a6611; display: flex; align-items: flex-start; gap: 10rpx; font-size: 20rpx; line-height: 1.5; }
+.report-evidence { margin-top: 18rpx; }
 .submit-note { margin: 20rpx 4rpx 0; display: flex; align-items: flex-start; gap: 12rpx; color: var(--smis-text-secondary); font-size: 19rpx; line-height: 1.5; }
 .submit-note .i { width: 10rpx; height: 10rpx; flex: 0 0 10rpx; margin-top: 9rpx; border-radius: 50%; background: var(--smis-safety); }
 .report-action-dock { position: fixed; z-index: 26; left: 50%; bottom: calc(148rpx + env(safe-area-inset-bottom)); width: min(calc(100vw - 56rpx), 484px); box-sizing: border-box; padding: 12rpx; border: 1rpx solid rgba(220, 227, 238, .88); border-radius: 24rpx; background: rgba(255, 255, 255, .96); box-shadow: 0 16rpx 42rpx rgba(29, 39, 66, .16); transform: translateX(-50%); backdrop-filter: blur(24rpx) saturate(150%); }
