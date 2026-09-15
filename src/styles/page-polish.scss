@@ -1,0 +1,550 @@
+/* Cross-page visual quality layer. Page-local styles retain layout ownership;
+   these selectors enforce the shared spacing, depth and control contracts. */
+
+.page-shell > .page-body {
+  position: relative;
+}
+
+/* Native uni-app buttons ship with a tall text line-box. Keep the visual and
+   touch centres identical for every compact or text-only action. */
+.page-shell .page-body .search button,
+.page-shell .page-body .tabs button,
+.page-shell .page-body .result-actions button,
+.page-shell .page-body .action-bar button,
+.page-shell .page-body .primary,
+.page-shell .page-body .accept-actions button,
+.page-shell .page-body .calendar__head button,
+.page-shell .home-body .error-banner button,
+.page-shell .home-body .section-head button,
+.page-shell .mine-body .menu button,
+.page-shell .mine-body .logout,
+.login-page .login-form__link,
+.report-page .textarea-field__head button,
+.report-page .submit {
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-shell .page-body.task-body,
+.page-shell .page-body.ledger-body,
+.page-shell .page-body.hazard-body,
+.page-shell .page-body.schedule-body,
+.page-shell .page-body.detail-body {
+  padding-top: 28rpx;
+  padding-bottom: 56rpx;
+}
+
+.page-shell .page-body.detail-body {
+  padding-bottom: 64rpx;
+}
+
+/* Summary strips */
+.page-shell .page-body .overview,
+.page-shell .page-body .summary {
+  margin-top: 0;
+  border: 1rpx solid var(--smis-line-soft);
+  border-radius: var(--smis-radius-lg);
+  box-shadow: var(--smis-shadow-card);
+}
+
+.page-shell .page-body .overview .strong,
+.page-shell .page-body .overview > view > text,
+.page-shell .page-body .summary .strong {
+  font-size: 40rpx;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.page-shell .page-body .overview .small,
+.page-shell .page-body .overview > view > text:last-child,
+.page-shell .page-body .summary text {
+  margin-top: 10rpx;
+  font-size: 21rpx;
+  font-weight: 600;
+}
+
+/* Search and filter controls */
+.page-shell .page-body .search {
+  min-height: 84rpx;
+  border: 1rpx solid var(--smis-control-border);
+  border-radius: var(--smis-radius-md);
+  background: var(--smis-surface);
+  box-shadow: 0 8rpx 22rpx rgba(35, 45, 77, 0.05);
+}
+
+.page-shell .page-body .search:focus-within {
+  border-color: rgba(79, 70, 229, 0.48);
+  box-shadow: 0 0 0 5rpx rgba(79, 70, 229, 0.1);
+}
+
+.page-shell .page-body .search button {
+  min-width: 92rpx;
+  min-height: 64rpx;
+  color: #fff;
+  background: var(--smis-primary-gradient);
+  font-weight: 700;
+}
+
+.page-shell .page-body .tabs button {
+  height: 64rpx;
+  border: 1rpx solid transparent;
+  border-radius: 16rpx;
+  font-weight: 600;
+}
+
+.page-shell .page-body .tabs .active,
+.page-shell .page-body .tabs .tab--active {
+  border-color: rgba(79, 70, 229, 0.1);
+  color: var(--smis-primary);
+  background: var(--smis-primary-soft);
+  box-shadow: none;
+  font-weight: 800;
+}
+
+/* Equipment ledger */
+.page-shell .ledger-body .overview {
+  padding: 30rpx 18rpx;
+}
+
+.page-shell .ledger-body .search {
+  margin-top: 22rpx;
+}
+
+.page-shell .ledger-body .equipment-list {
+  margin-top: 22rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.page-shell .ledger-body .equipment {
+  margin-bottom: 0;
+  padding: 26rpx;
+}
+
+.page-shell .ledger-body .equipment__icon {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+}
+
+.page-shell .ledger-body .equipment__copy text {
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.page-shell .ledger-body .equipment__spec {
+  margin-left: 84rpx;
+}
+
+.page-shell .ledger-body .equipment__location {
+  min-height: 58rpx;
+  padding: 15rpx 16rpx;
+  background: var(--smis-control-bg);
+}
+
+/* Detail pages */
+.page-shell .detail-body .identity,
+.page-shell .detail-body .hazard-main,
+.page-shell .detail-body .task-head {
+  margin-top: 0;
+  padding: 28rpx;
+}
+
+.page-shell .detail-body .identity > image,
+.page-shell .detail-body .identity__fallback {
+  width: 152rpx;
+  height: 152rpx;
+  border-radius: 22rpx;
+}
+
+.page-shell .detail-body .fact-card,
+.page-shell .detail-body .facts,
+.page-shell .detail-body .progress,
+.page-shell .detail-body .summary-field,
+.page-shell .detail-body .action {
+  margin-top: 20rpx;
+  padding: 28rpx;
+}
+
+.page-shell .detail-body .card-title,
+.page-shell .detail-body .title,
+.page-shell .detail-body .section-head text {
+  font-size: 29rpx;
+  font-weight: 800;
+}
+
+.page-shell .detail-body .facts > view,
+.page-shell .detail-body .info-row {
+  min-height: 82rpx;
+}
+
+.page-shell .detail-body .inspect-card {
+  margin-top: 20rpx;
+  padding: 28rpx 18rpx;
+  border-radius: var(--smis-radius-lg);
+  background: linear-gradient(135deg, #25205f, #3730a3);
+  box-shadow: 0 16rpx 34rpx rgba(49, 46, 129, 0.18);
+}
+
+.page-shell .detail-body .task-head__title,
+.page-shell .detail-body .hazard-main__desc {
+  font-size: 31rpx;
+  font-weight: 800;
+  text-wrap: pretty;
+}
+
+.page-shell .detail-body .task-head__dates,
+.page-shell .detail-body .hazard-main__place {
+  padding: 20rpx;
+  border-top: 0;
+  border-radius: 18rpx;
+  background: var(--smis-control-bg);
+}
+
+.page-shell .detail-body .progress__bar {
+  height: 14rpx;
+  background: #e9edf5;
+}
+
+.page-shell .detail-body .progress__bar .i {
+  background: var(--smis-primary-gradient);
+}
+
+.page-shell .detail-body .check-item {
+  padding: 26rpx;
+}
+
+.page-shell .detail-body .result-actions button {
+  min-height: 82rpx;
+}
+
+.page-shell .detail-body textarea {
+  border: 1rpx solid var(--smis-control-border);
+  background: var(--smis-control-bg);
+}
+
+.page-shell .detail-body .timeline {
+  margin-top: 34rpx;
+  padding: 28rpx 22rpx 0;
+  border: 1rpx solid var(--smis-line-soft);
+  border-radius: var(--smis-radius-lg);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.page-shell .detail-body .event__rail .event__dot--current {
+  border-color: var(--smis-primary);
+  box-shadow: 0 0 0 6rpx rgba(79, 70, 229, 0.1);
+}
+
+.page-shell .detail-body .primary,
+.page-shell .detail-body .accept-actions button {
+  min-height: var(--smis-control-height);
+  border-radius: var(--smis-control-radius);
+}
+
+.page-shell .detail-body .action-bar {
+  left: 50%;
+  right: auto;
+  width: min(100%, 520px);
+  padding: 16rpx 28rpx calc(18rpx + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  backdrop-filter: blur(24rpx);
+}
+
+.page-shell .detail-body .action-bar button {
+  height: var(--smis-control-height);
+  min-height: var(--smis-control-height);
+  border-radius: var(--smis-control-radius);
+}
+
+/* Hazard ledger */
+.page-shell .hazard-body .overview {
+  padding: 30rpx 18rpx;
+}
+
+.page-shell .hazard-body .search {
+  margin-top: 22rpx;
+}
+
+.page-shell .hazard-body .hazard-list {
+  gap: 18rpx;
+}
+
+.page-shell .hazard-body .hazard {
+  padding: 26rpx;
+}
+
+.page-shell .hazard-body .hazard__desc {
+  font-size: 28rpx;
+  font-weight: 800;
+  text-wrap: pretty;
+}
+
+.page-shell .hazard-body .hazard__place {
+  padding: 14rpx 16rpx;
+  border-radius: 14rpx;
+  background: var(--smis-control-bg);
+}
+
+/* Schedule */
+.page-shell .schedule-body .calendar {
+  margin-top: 0;
+  padding: 28rpx;
+}
+
+.page-shell .schedule-body .calendar__head button {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 20rpx;
+  background: var(--smis-primary-soft);
+}
+
+.page-shell .schedule-body .day {
+  height: 80rpx;
+}
+
+.page-shell .schedule-body .section-head {
+  margin-top: 38rpx;
+}
+
+.page-shell .schedule-body .shift-list {
+  gap: 18rpx;
+}
+
+.page-shell .schedule-body .shift {
+  padding: 24rpx;
+}
+
+/* Home */
+.page-shell > .hero {
+  padding: calc(48rpx + env(safe-area-inset-top)) 32rpx 40rpx;
+  border-bottom-right-radius: 36rpx;
+  border-bottom-left-radius: 36rpx;
+}
+
+.page-shell > .hero .hero__hello {
+  font-size: 39rpx;
+  font-weight: 800;
+  letter-spacing: -0.4rpx;
+}
+
+.page-shell > .hero .hero__eyebrow {
+  display: block;
+  margin-bottom: 10rpx;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 20rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+}
+
+.page-shell > .hero .hero__summary {
+  margin-top: 36rpx;
+  padding: 30rpx 10rpx;
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(12rpx);
+}
+
+.page-shell > .hero .hero__summary .strong {
+  font-size: 42rpx;
+  font-weight: 800;
+}
+
+.page-shell > .hero .track {
+  margin-top: 32rpx;
+}
+
+.page-shell .home-body {
+  padding-top: 30rpx;
+}
+
+.page-shell .home-body .quick-grid {
+  gap: 18rpx;
+}
+
+.page-shell .home-body .quick-card {
+  min-height: 146rpx;
+  padding: 25rpx;
+  border: 1rpx solid var(--smis-line-soft);
+  box-shadow: var(--smis-shadow-card);
+}
+
+.page-shell .home-body .quick-card__icon {
+  width: 68rpx;
+  height: 68rpx;
+}
+
+.page-shell .home-body .section-head {
+  margin-top: 42rpx;
+}
+
+.page-shell .home-body .task-row {
+  min-height: 112rpx;
+  padding: 24rpx;
+}
+
+.page-shell .home-body .schedule-card {
+  margin-top: 24rpx;
+  padding: 30rpx;
+  border-radius: var(--smis-radius-lg);
+  background: linear-gradient(135deg, #25205f, #3730a3);
+  box-shadow: 0 16rpx 34rpx rgba(49, 46, 129, 0.18);
+}
+
+/* Workbench */
+.page-shell .workbench-body {
+  padding-top: 28rpx;
+}
+
+.page-shell .workbench-body .search {
+  background: var(--smis-control-bg);
+}
+
+.page-shell .workbench-body .app-group {
+  margin-top: 40rpx;
+}
+
+.page-shell .workbench-body .app-group__head .strong {
+  font-size: 31rpx;
+  font-weight: 800;
+}
+
+.page-shell .workbench-body .app-grid {
+  gap: 18rpx;
+}
+
+.page-shell .workbench-body .app {
+  min-height: 162rpx;
+  padding: 24rpx;
+  border: 1rpx solid var(--smis-line-soft);
+  border-radius: var(--smis-radius-lg);
+  box-shadow: var(--smis-shadow-card);
+}
+
+.page-shell .workbench-body .app__copy text {
+  font-size: 27rpx;
+  font-weight: 800;
+}
+
+.page-shell .workbench-body .web-note {
+  margin-top: 32rpx;
+  padding: 26rpx;
+  border: 1rpx solid rgba(79, 70, 229, 0.09);
+  border-radius: var(--smis-radius-lg);
+}
+
+/* Messages */
+.page-shell .page-body .message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.page-shell .page-body .message {
+  min-height: 146rpx;
+  padding: 26rpx;
+}
+
+.page-shell .page-body .message__copy .strong {
+  font-size: 27rpx;
+  font-weight: 800;
+}
+
+.page-shell .page-body .state {
+  margin-top: 8rpx;
+  border: 1rpx solid var(--smis-line-soft);
+}
+
+/* Mine */
+.page-shell > .profile-hero {
+  position: relative;
+  padding: calc(54rpx + env(safe-area-inset-top)) 34rpx 48rpx;
+  overflow: hidden;
+  border-bottom-right-radius: 36rpx;
+  border-bottom-left-radius: 36rpx;
+}
+
+.page-shell > .profile-hero::after {
+  position: absolute;
+  top: -180rpx;
+  right: -120rpx;
+  width: 380rpx;
+  height: 380rpx;
+  content: '';
+  border: 1rpx solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 0 0 64rpx rgba(255, 255, 255, 0.025);
+}
+
+.page-shell > .profile-hero > * { position: relative; z-index: 1; }
+.page-shell .mine-body { margin-top: 0; padding-top: 28rpx; }
+.page-shell .mine-body .identity { padding: 28rpx; }
+.page-shell .mine-body .menu { margin-top: 20rpx; }
+.page-shell .mine-body .menu button { min-height: 108rpx; }
+.page-shell .mine-body .logout { min-height: var(--smis-control-height); border: 1rpx solid rgba(229, 72, 77, 0.12); box-shadow: var(--smis-shadow-sm); }
+
+/* Quick report */
+.report-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.report-page .report-hero {
+  position: relative;
+  padding: calc(52rpx + env(safe-area-inset-top)) 34rpx 56rpx;
+  overflow: hidden;
+  border-bottom-right-radius: 36rpx;
+  border-bottom-left-radius: 36rpx;
+}
+
+.report-page .report-hero::after {
+  position: absolute;
+  top: -170rpx;
+  right: -120rpx;
+  width: 360rpx;
+  height: 360rpx;
+  content: '';
+  border: 1rpx solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 0 0 58rpx rgba(255, 255, 255, 0.025);
+}
+
+.report-page .report-hero > * { position: relative; z-index: 1; }
+.report-page .report-hero__copy text { font-size: 40rpx; font-weight: 800; }
+.report-page .report-hero__camera { border: 1rpx solid rgba(255, 255, 255, 0.2); color: #fff; background: rgba(255, 255, 255, 0.14); }
+.report-page .report-body { margin-top: 0; padding: 28rpx 28rpx calc(196rpx + env(safe-area-inset-bottom)); }
+.report-page .reporter { padding: 24rpx; }
+.report-page .form-card { margin-top: 20rpx; padding: 28rpx; overflow: visible; }
+.report-page .form-card__section { margin-bottom: 12rpx; font-size: 29rpx; font-weight: 800; }
+.report-page .select-row { min-height: 102rpx; }
+.report-page .textarea-field { margin-top: 22rpx; padding: 22rpx; border: 1rpx solid var(--smis-control-border); background: var(--smis-control-bg); }
+.report-page .textarea-field textarea { min-height: 132rpx; }
+.report-page .photo,
+.report-page .photo-add { height: 176rpx; }
+.report-page .submit-note { margin: 24rpx 4rpx 20rpx; }
+.report-page .submit { min-height: var(--smis-control-height); border-radius: var(--smis-control-radius); box-shadow: var(--smis-shadow-primary); }
+
+@media screen and (max-width: 350px) {
+  .page-shell .workbench-body .app-grid { grid-template-columns: 1fr; }
+  .page-shell .home-body .quick-card { padding: 21rpx; }
+  .page-shell .detail-body .facts { grid-template-columns: 1fr; }
+}
+
+@media screen and (min-width: 768px) {
+  .report-page {
+    max-width: 520px;
+    margin: 0 auto;
+    box-shadow: 0 0 80rpx rgba(34, 45, 74, 0.1);
+  }
+
+  .report-page .nav {
+    left: 50%;
+    right: auto;
+    width: min(calc(100vw - 36rpx), 484px);
+    transform: translateX(-50%);
+  }
+}

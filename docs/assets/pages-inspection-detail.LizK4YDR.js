@@ -1,0 +1,1 @@
+import{H as a,L as s,q as i}from"./index-BSpBmSEO.js";import{t as e}from"./SmisTaskDetailView.CQ8YCl9I.js";var t=a({__name:"detail",setup:a=>(a,t)=>(i(),s(e,{kind:"inspection"}))});export{t as default};
