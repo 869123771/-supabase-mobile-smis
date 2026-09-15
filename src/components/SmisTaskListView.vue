@@ -1,22 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { computed, ref } from 'vue'
+import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import SmisTopBar from './SmisTopBar.vue'
 import SmisTaskCard from './SmisTaskCard.vue'
 import SmisEmpty from './SmisEmpty.vue'
-import SmisIcon from './SmisIcon.vue'
+import SmisSearchBar from './SmisSearchBar.vue'
+import SmisStatusTabs from './SmisStatusTabs.vue'
+import SmisListFooter from './SmisListFooter.vue'
 import { useAuthStore } from '@/stores/auth'
 import { listHazardInspectionTasks, listRiskTasks } from '@/api/smis'
 import type { HazardInspectionTask, RiskTask, TaskOverview, TaskStatus } from '@/api/types'
 import { formatDate } from '@/utils/format'
 import { getErrorMessage } from '@/api/supabase'
 
+const PAGE_SIZE = 15
 const props = defineProps<{ kind: 'risk' | 'inspection' }>()
 const auth = useAuthStore()
 const loading = ref(false)
+const loadingMore = ref(false)
 const keyword = ref('')
 const status = ref<TaskStatus | ''>('')
 const rows = ref<Array<RiskTask | HazardInspectionTask>>([])
+const total = ref(0)
 const overview = ref<TaskOverview>({ total: 0, notStarted: 0, inProgress: 0, overdue: 0, completed: 0, cancelled: 0 })
 const tabs: Array<{ value: TaskStatus | ''; label: string }> = [
   { value: '', label: '全部' },
@@ -25,27 +30,32 @@ const tabs: Array<{ value: TaskStatus | ''; label: string }> = [
   { value: 'overdue', label: '已逾期' },
   { value: 'completed', label: '已完成' }
 ]
+const finished = computed(() => rows.value.length >= total.value)
 
-async function load() {
-  if (!(await auth.ensureValidSession())) return
-  loading.value = true
+async function load(reset = true) {
+  if (loading.value || loadingMore.value || !(await auth.ensureValidSession())) return
+  reset ? (loading.value = true) : (loadingMore.value = true)
+  const from = reset ? 0 : rows.value.length
   try {
+    const params = { keyword: keyword.value, status: status.value || undefined, from, to: from + PAGE_SIZE - 1 }
     const data = props.kind === 'risk'
-      ? await listRiskTasks(auth.token, { keyword: keyword.value, status: status.value || undefined, to: 49 })
-      : await listHazardInspectionTasks(auth.token, { keyword: keyword.value, status: status.value || undefined, to: 49 })
-    rows.value = data.records
+      ? await listRiskTasks(auth.token, params)
+      : await listHazardInspectionTasks(auth.token, params)
+    rows.value = reset ? data.records : [...rows.value, ...data.records]
+    total.value = data.total
     overview.value = data.overview
   } catch (error) {
     uni.showToast({ title: getErrorMessage(error), icon: 'none' })
   } finally {
     loading.value = false
+    loadingMore.value = false
     uni.stopPullDownRefresh()
   }
 }
 
-function select(value: TaskStatus | '') {
-  status.value = value
-  void load()
+function select(value: string) {
+  status.value = value as TaskStatus | ''
+  void load(true)
 }
 
 function title(item: RiskTask | HazardInspectionTask) {
@@ -70,8 +80,9 @@ function open(item: RiskTask | HazardInspectionTask) {
   uni.navigateTo({ url: `/pages/${props.kind}/detail?id=${item.id}` })
 }
 
-onShow(load)
-onPullDownRefresh(load)
+onShow(() => load(true))
+onPullDownRefresh(() => load(true))
+onReachBottom(() => { if (!finished.value) void load(false) })
 </script>
 
 <template>
@@ -90,36 +101,19 @@ onPullDownRefresh(load)
       </view>
 
       <view class="task-tools surface-card">
-        <view class="search">
-          <SmisIcon name="search" size="32rpx" />
-          <input
-            v-model="keyword"
-            type="search"
-            name="task-search"
-            aria-label="搜索任务"
-            autocomplete="off"
-            :placeholder="kind === 'risk' ? '任务编号 / 风险点' : '搜索任务编号'"
-            confirm-type="search"
-            @confirm="load"
-          />
-          <button @tap="load">搜索</button>
-        </view>
-        <scroll-view class="tabs" scroll-x :show-scrollbar="false">
-          <button
-            v-for="tab in tabs"
-            :key="tab.value"
-            :class="{ 'tab--active': status === tab.value }"
-            :aria-pressed="status === tab.value"
-            @tap="select(tab.value)"
-          >
-            {{ tab.label }}
-          </button>
-        </scroll-view>
+        <SmisSearchBar
+          v-model="keyword"
+          :placeholder="kind === 'risk' ? '任务编号 / 风险点' : '任务编号 / 排查对象'"
+          action-label="搜索"
+          embedded
+          :disabled="loading"
+          @search="load(true)"
+        />
+        <SmisStatusTabs :model-value="status" :tabs="tabs" embedded @update:model-value="select" />
       </view>
 
       <view v-if="loading" class="loading surface-card" aria-live="polite">
-        <wd-loading color="#4f46e5" />
-        <text>正在同步任务…</text>
+        <wd-loading color="#4f46e5" /><text>正在同步任务…</text>
       </view>
       <view v-else-if="rows.length" class="task-list">
         <SmisTaskCard
@@ -135,6 +129,7 @@ onPullDownRefresh(load)
           :danger-count="abnormal(item)"
           @tap="open(item)"
         />
+        <SmisListFooter :loading="loadingMore" :finished="finished" :count="rows.length" />
       </view>
       <SmisEmpty v-else title="暂无排查任务" description="任务由 Web 端计划生成，发布后会同步到这里" />
     </view>
@@ -146,17 +141,10 @@ onPullDownRefresh(load)
 .summary { padding: 28rpx 16rpx; display: grid; grid-template-columns: repeat(3, 1fr); }
 .summary > view { position: relative; display: flex; flex-direction: column; align-items: center; }
 .summary > view + view::before { position: absolute; left: 0; top: 8rpx; bottom: 8rpx; width: 1rpx; content: ''; background: var(--smis-line-soft); }
-.summary .strong { color: var(--smis-primary); font-size: 40rpx; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
-.summary text { margin-top: 10rpx; color: var(--smis-text-muted); font-size: 21rpx; font-weight: 600; }
+.summary .strong { color: var(--smis-primary); font-size: 38rpx; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.summary text { margin-top: 9rpx; color: var(--smis-text-muted); font-size: 19rpx; font-weight: 600; }
 .summary__overdue .strong { color: var(--smis-danger); }
-.task-tools { margin-top: 20rpx; padding: 12rpx; overflow: visible; }
-.search { height: 84rpx; padding-left: 18rpx; border-radius: 18rpx; color: var(--smis-text-muted); background: var(--smis-control-bg); display: flex; align-items: center; gap: 12rpx; }
-.search:focus-within { box-shadow: 0 0 0 3rpx rgba(79, 70, 229, 0.16); }
-.search input { min-width: 0; flex: 1; color: var(--smis-text); font-size: 24rpx; }
-.search button { height: 64rpx; margin: 0 2rpx 0 0; padding: 0 24rpx; border-radius: 14rpx; color: #fff; background: var(--smis-primary-gradient); font-size: 22rpx; font-weight: 700; }
-.tabs { width: 100%; margin-top: 12rpx; white-space: nowrap; }
-.tabs button { display: inline-flex; min-width: 108rpx; height: 64rpx; margin: 0 8rpx 0 0; padding: 0 20rpx; border-radius: 16rpx; color: var(--smis-text-secondary); background: transparent; align-items: center; justify-content: center; font-size: 21rpx; font-weight: 600; }
-.tabs .tab--active { color: var(--smis-primary); background: var(--smis-primary-soft); font-weight: 800; }
+.task-tools { margin-top: 20rpx; padding: 10rpx; display: flex; flex-direction: column; gap: 8rpx; overflow: hidden; }
 .task-list { margin-top: 20rpx; display: flex; flex-direction: column; gap: 18rpx; }
-.loading { min-height: 280rpx; margin-top: 20rpx; display: flex; align-items: center; justify-content: center; gap: 14rpx; color: var(--smis-text-secondary); font-size: 22rpx; }
+.loading { min-height: 280rpx; margin-top: 20rpx; color: var(--smis-text-secondary); display: flex; align-items: center; justify-content: center; gap: 14rpx; font-size: 20rpx; }
 </style>

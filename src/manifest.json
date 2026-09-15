@@ -11,5 +11,25 @@
       "mode": "hash"
     }
   },
-  "mp-weixin": { "appid": "", "setting": { "urlCheck": false }, "usingComponents": true }
+  "app-plus": {
+    "modules": {
+      "Maps": {}
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "permission": {
+      "scope.userLocation": {
+        "desc": "用于记录现场隐患的具体位置"
+      }
+    },
+    "requiredPrivateInfos": ["getLocation"],
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": true
+    },
+    "usingComponents": true
+  }
 }

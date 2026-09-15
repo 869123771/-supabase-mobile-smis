@@ -1,1 +1,0 @@
-import{H as s,L as i,q as a}from"./index-BSpBmSEO.js";import{t as e}from"./SmisTaskListView.bPrR52Dk.js";var t=s({__name:"index",setup:s=>(s,t)=>(a(),i(e,{kind:"inspection"}))});export{t as default};

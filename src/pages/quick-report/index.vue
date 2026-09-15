@@ -1,35 +1,273 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import type { FormInstance, FormRules } from 'wot-design-uni/components/wd-form/types'
 import SmisBottomNav from '@/components/SmisBottomNav.vue'
+import SmisEvidenceUpload from '@/components/SmisEvidenceUpload.vue'
+import SmisFormSection from '@/components/SmisFormSection.vue'
 import SmisIcon from '@/components/SmisIcon.vue'
+import SmisLocationField from '@/components/SmisLocationField.vue'
+import SmisTextareaField from '@/components/SmisTextareaField.vue'
+import SmisTopBar from '@/components/SmisTopBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useDictionaryStore } from '@/stores/dictionary'
 import { useProfileStore } from '@/stores/profile'
 import { submitQuickReport } from '@/api/smis'
-import { getErrorMessage, uploadFile } from '@/api/supabase'
+import { getErrorMessage } from '@/api/supabase'
 import type { ReportingOrganization, ReportingSite } from '@/api/types'
+import { flattenHierarchy, toHierarchyOptions } from '@/utils/options'
 
-const auth=useAuthStore();const dictionary=useDictionaryStore();const profileStore=useProfileStore()
-const loading=ref(false);const uploading=ref(false);const submitting=ref(false)
-const form=reactive({hazardOrganizationId:'',siteId:'',location:'',hazardLevel:'',description:'',rectificationSuggestion:'',imageUrls:[] as string[]})
-function flatten<T extends {children?:T[]}>(rows:T[]):T[]{return rows.flatMap(item=>[item,...flatten(item.children||[])])}
-const organizations=computed(()=>flatten<ReportingOrganization>(profileStore.options?.organizations||[]))
-const sites=computed(()=>flatten<ReportingSite>(profileStore.options?.sites||[]).filter(item=>!form.hazardOrganizationId||item.organizationId===form.hazardOrganizationId))
-const hazardLevels=computed(()=>{const typeId=dictionary.typeIdByCode.smisHazardLevel;const rows=dictionary.entries.filter(x=>x.typeId===typeId);return rows.length?rows:[{id:'1',typeId:'',value:'D',label:'D级 · 一般隐患'},{id:'2',typeId:'',value:'C',label:'C级 · 较大隐患'},{id:'3',typeId:'',value:'B',label:'B级 · 重大隐患'}]})
-const organizationName=computed(()=>organizations.value.find(x=>x.id===form.hazardOrganizationId)?.organizationName||'请选择隐患所属组织')
-const siteName=computed(()=>sites.value.find(x=>x.id===form.siteId)?.siteName||'请选择现场区域')
-const levelName=computed(()=>hazardLevels.value.find(x=>x.value===form.hazardLevel)?.label||'请选择隐患等级')
+interface QuickReportForm {
+  hazardOrganizationId: string
+  siteId: string
+  location: string
+  hazardLevel: string
+  description: string
+  rectificationSuggestion: string
+  imageUrls: string[]
+}
 
-async function load(){if(!(await auth.ensureValidSession()))return;loading.value=true;try{await Promise.all([profileStore.load(auth.token),dictionary.load(auth.token)]);form.hazardOrganizationId||=profileStore.profile?.organizationId||''}catch(e){uni.showToast({title:getErrorMessage(e),icon:'none'})}finally{loading.value=false}}
-function orgChange(e:{detail:{value:string}}){const item=organizations.value[Number(e.detail.value)];if(item){form.hazardOrganizationId=item.id;form.siteId=''}}
-function siteChange(e:{detail:{value:string}}){const item=sites.value[Number(e.detail.value)];if(item)form.siteId=item.id}
-function levelChange(e:{detail:{value:string}}){const item=hazardLevels.value[Number(e.detail.value)];if(item)form.hazardLevel=item.value}
-function chooseLocation(){uni.chooseLocation({success:r=>{form.location=r.address||r.name}})}
-function addPhotos(){if(form.imageUrls.length>=6)return uni.showToast({title:'最多上传 6 张图片',icon:'none'});uni.chooseImage({count:6-form.imageUrls.length,sizeType:['compressed'],sourceType:['camera','album'],async success(result){uploading.value=true;try{for(const path of result.tempFilePaths)form.imageUrls.push(await uploadFile(path,auth.token,'smis/hazard'))}catch(e){uni.showToast({title:getErrorMessage(e,'图片上传失败'),icon:'none'})}finally{uploading.value=false}}})}
-function removePhoto(index:number){form.imageUrls.splice(index,1)}
-async function submit(){if(!form.hazardOrganizationId)return uni.showToast({title:'请选择所属组织',icon:'none'});if(!form.siteId)return uni.showToast({title:'请选择现场区域',icon:'none'});if(!form.location.trim())return uni.showToast({title:'请填写具体位置',icon:'none'});if(!form.hazardLevel)return uni.showToast({title:'请选择隐患等级',icon:'none'});if(!form.description.trim())return uni.showToast({title:'请描述现场隐患',icon:'none'});if(!form.imageUrls.length)return uni.showToast({title:'请至少上传 1 张现场照片',icon:'none'});submitting.value=true;try{const result=await submitQuickReport(auth.token,{...form,location:form.location.trim(),description:form.description.trim(),rectificationSuggestion:form.rectificationSuggestion.trim()||undefined});uni.showModal({title:'上报成功',content:`隐患编号 ${result.hazardNo}\n已进入待核准状态`,showCancel:false,confirmText:'查看隐患',success:()=>uni.redirectTo({url:`/pages/hazards/detail?id=${result.id}`})})}catch(e){uni.showToast({title:getErrorMessage(e,'提交失败'),icon:'none',duration:2500})}finally{submitting.value=false}}
+const auth = useAuthStore()
+const dictionary = useDictionaryStore()
+const profileStore = useProfileStore()
+const formRef = ref<FormInstance>()
+const loading = ref(false)
+const uploading = ref(false)
+const locating = ref(false)
+const submitting = ref(false)
+const form = reactive<QuickReportForm>({
+  hazardOrganizationId: '',
+  siteId: '',
+  location: '',
+  hazardLevel: '',
+  description: '',
+  rectificationSuggestion: '',
+  imageUrls: []
+})
+
+const rules: FormRules = {
+  hazardOrganizationId: [{ required: true, message: '请选择隐患所属组织' }],
+  siteId: [{ required: true, message: '请选择场所区域' }],
+  location: [{ required: true, message: '请填写或采集具体位置' }],
+  hazardLevel: [{ required: true, message: '请选择隐患等级' }],
+  description: [{ required: true, message: '请描述现场隐患' }]
+}
+
+const organizations = computed(() => flattenHierarchy<ReportingOrganization>(profileStore.options?.organizations || []))
+const sites = computed(() => flattenHierarchy<ReportingSite>(profileStore.options?.sites || []))
+const organizationOptions = computed(() => toHierarchyOptions(organizations.value, (item) => item.organizationName))
+const siteOptions = computed(() => toHierarchyOptions(sites.value, (item) => item.siteName))
+const hazardLevelOptions = computed(() => {
+  const typeId = dictionary.typeIdByCode.smisHazardLevel
+  const rows = dictionary.entries.filter((item) => item.typeId === typeId)
+  const source = rows.length ? rows : [
+    { id: '1', typeId: '', value: 'D', label: 'D级 · 一般隐患' },
+    { id: '2', typeId: '', value: 'C', label: 'C级 · 较大隐患' },
+    { id: '3', typeId: '', value: 'B', label: 'B级 · 重大隐患' }
+  ]
+  return source.map((item) => ({ value: item.value, label: item.label }))
+})
+
+async function load() {
+  if (!(await auth.ensureValidSession())) return
+  loading.value = true
+  try {
+    await Promise.all([profileStore.load(auth.token), dictionary.load(auth.token)])
+    form.hazardOrganizationId ||= profileStore.profile?.organizationId || ''
+  } catch (error) {
+    uni.showToast({ title: getErrorMessage(error), icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submit() {
+  if (submitting.value || uploading.value || locating.value) return
+  const validation = await formRef.value?.validate()
+  if (validation && !validation.valid) return
+  if (!form.imageUrls.length) {
+    uni.showToast({ title: '请至少上传 1 张现场照片', icon: 'none' })
+    return
+  }
+
+  submitting.value = true
+  try {
+    const result = await submitQuickReport(auth.token, {
+      ...form,
+      location: form.location.trim(),
+      description: form.description.trim(),
+      rectificationSuggestion: form.rectificationSuggestion.trim() || undefined
+    })
+    uni.showModal({
+      title: '上报成功',
+      content: `隐患编号 ${result.hazardNo}\n已进入待核准状态`,
+      showCancel: false,
+      confirmText: '查看隐患',
+      success: () => uni.redirectTo({ url: `/pages/hazards/detail?id=${result.id}` })
+    })
+  } catch (error) {
+    uni.showToast({ title: getErrorMessage(error, '提交失败'), icon: 'none', duration: 2500 })
+  } finally {
+    submitting.value = false
+  }
+}
+
 onShow(load)
 </script>
-<template><view class="report-page"><view class="report-hero"><view class="report-hero__copy"><text>现场随手拍</text><text class="small">拍照留证，隐患直达闭环</text></view><view class="report-hero__camera"><SmisIcon name="camera" size="50rpx"/></view></view><view class="report-body"><view v-if="loading" class="loading"><wd-loading color="#4f46e5"/><text>正在加载上报信息…</text></view><template v-else><view class="reporter surface-card"><view class="reporter__avatar">{{(profileStore.profile?.employeeName||'安').slice(-1)}}</view><view><text>{{profileStore.profile?.employeeName||'当前登录用户'}}</text><text class="small">{{profileStore.profile?.organizationName||'请先选择所属组织'}}</text></view><text class="reporter__verified">实名</text></view><view class="form-card surface-card"><text class="form-card__section">隐患位置</text><picker mode="selector" :range="organizations" range-key="organizationName" @change="orgChange"><view class="select-row"><view class="select-row__icon"><SmisIcon name="organization" size="34rpx"/></view><view><text>所属组织 *</text><text class="strong" :class="{'placeholder':!form.hazardOrganizationId}">{{organizationName}}</text></view><SmisIcon name="chevron" size="28rpx"/></view></picker><picker mode="selector" :range="sites" range-key="siteName" @change="siteChange"><view class="select-row"><view class="select-row__icon"><SmisIcon name="location" size="34rpx"/></view><view><text>现场区域 *</text><text class="strong" :class="{'placeholder':!form.siteId}">{{siteName}}</text></view><SmisIcon name="chevron" size="28rpx"/></view></picker><view class="textarea-field textarea-field--location"><view class="textarea-field__head"><text>具体位置 *</text><button @tap="chooseLocation"><SmisIcon name="location" size="26rpx"/>定位</button></view><input v-model="form.location" name="location" aria-label="隐患具体位置" autocomplete="off" maxlength="120" placeholder="例如：2号厂房南侧通道"/></view><text class="form-card__section form-card__section--spaced">隐患情况</text><picker mode="selector" :range="hazardLevels" range-key="label" @change="levelChange"><view class="select-row"><view class="select-row__icon select-row__icon--warning"><SmisIcon name="risk" size="34rpx"/></view><view><text>隐患等级 *</text><text class="strong" :class="{'placeholder':!form.hazardLevel}">{{levelName}}</text></view><SmisIcon name="chevron" size="28rpx"/></view></picker><view class="textarea-field"><text>隐患描述 *</text><textarea v-model="form.description" name="description" aria-label="隐患描述" maxlength="500" auto-height placeholder="描述看到的危险状态、可能后果及影响范围"/><text class="small">{{form.description.length}} / 500</text></view><view class="textarea-field"><text>整改建议</text><textarea v-model="form.rectificationSuggestion" name="suggestion" aria-label="整改建议" maxlength="300" auto-height placeholder="可选：建议采取的隔离、修复或管控措施"/></view><view class="photo-field"><view class="photo-field__head"><view><text>现场照片 *</text><text class="small">至少 1 张，最多 6 张</text></view><text>{{form.imageUrls.length}} / 6</text></view><view class="photo-grid"><view v-for="(url,index) in form.imageUrls" :key="url" class="photo"><image :src="url" mode="aspectFill"/><button aria-label="移除照片" @tap.stop="removePhoto(index)"><SmisIcon name="close" size="25rpx"/></button></view><button v-if="form.imageUrls.length<6" class="photo-add" :disabled="uploading" @tap="addPhotos"><wd-loading v-if="uploading" color="#4f46e5"/><SmisIcon v-else name="camera" size="42rpx"/><text>{{uploading?'上传中':'拍照 / 相册'}}</text></button></view></view></view><view class="submit-note"><view class="i"/><text>提交后进入“待核准”，后续整改和验收节点会完整留痕。</text></view><button class="submit" :disabled="submitting||uploading" :loading="submitting" @tap="submit">提交隐患上报</button></template></view><SmisBottomNav active="quick"/></view></template>
-<style scoped lang="scss">.report-page{min-height:100vh;background:var(--smis-bg)}.report-hero{padding:calc(44rpx + env(safe-area-inset-top)) 32rpx 62rpx;background:var(--smis-hero-gradient);color:#fff;display:flex;align-items:center}.report-hero__copy{flex:1;display:flex;flex-direction:column}.report-hero__copy text{font-size:40rpx;font-weight:700}.report-hero__copy .small{margin-top:8rpx;font-size:23rpx;opacity:.7}.report-hero__camera{width:90rpx;height:90rpx;border-radius:29rpx;background:var(--smis-safety);color:#503800;display:flex;align-items:center;justify-content:center}.report-body{position:relative;margin-top:-30rpx;padding:0 28rpx calc(160rpx + env(safe-area-inset-bottom))}.loading{height:360rpx;display:flex;align-items:center;justify-content:center;gap:14rpx;color:var(--smis-text-secondary)}.reporter{padding:22rpx;display:flex;align-items:center;gap:16rpx}.reporter__avatar{width:66rpx;height:66rpx;border-radius:20rpx;background:var(--smis-primary-soft);color:var(--smis-primary);font-size:27rpx;font-weight:700;display:flex;align-items:center;justify-content:center}.reporter>view:nth-child(2){min-width:0;flex:1;display:flex;flex-direction:column}.reporter>view text{font-size:25rpx;font-weight:700}.reporter>view .small{margin-top:4rpx;color:var(--smis-text-muted);font-size:20rpx}.reporter__verified{padding:8rpx 13rpx;border-radius:999rpx;background:#e4f2eb;color:var(--smis-success);font-size:18rpx;font-weight:700}.form-card{margin-top:18rpx;padding:26rpx}.form-card__section{display:block;margin-bottom:8rpx;font-size:27rpx;font-weight:700}.form-card__section--spaced{margin-top:34rpx;padding-top:28rpx;border-top:1rpx solid var(--smis-line)}.select-row{min-height:96rpx;border-bottom:1rpx solid var(--smis-line);display:flex;align-items:center;gap:16rpx}.select-row__icon{width:58rpx;height:58rpx;border-radius:18rpx;background:var(--smis-primary-soft);color:var(--smis-primary);display:flex;align-items:center;justify-content:center}.select-row__icon--warning{background:#fff1df;color:var(--smis-warning)}.select-row>view:nth-child(2){min-width:0;flex:1;display:flex;flex-direction:column}.select-row text,.textarea-field>text,.textarea-field__head>text{font-size:20rpx;color:var(--smis-text-muted)}.select-row .strong{margin-top:4rpx;font-size:24rpx;font-weight:600}.placeholder{color:var(--smis-text-muted);font-weight:400!important}.textarea-field{margin-top:22rpx;padding:20rpx;border-radius:18rpx;background:#f5f8fa;display:flex;flex-direction:column}.textarea-field textarea{width:100%;min-height:118rpx;margin-top:12rpx;font-size:25rpx;line-height:1.55;color:var(--smis-text)}.textarea-field input{height:60rpx;margin-top:7rpx;font-size:25rpx}.textarea-field>.small{align-self:flex-end;color:var(--smis-text-muted);font-size:18rpx}.textarea-field__head{display:flex;align-items:center;justify-content:space-between}.textarea-field__head button{min-height:60rpx;margin:0;padding:0 8rpx;background:transparent;color:var(--smis-primary);font-size:20rpx;display:flex;align-items:center;gap:5rpx}.photo-field{margin-top:26rpx}.photo-field__head{display:flex;justify-content:space-between}.photo-field__head>view{display:flex;flex-direction:column}.photo-field__head text{font-size:23rpx;font-weight:700}.photo-field__head .small,.photo-field__head>text{margin-top:4rpx;color:var(--smis-text-muted);font-size:19rpx}.photo-grid{margin-top:16rpx;display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx}.photo,.photo-add{position:relative;width:100%;height:180rpx;border-radius:17rpx;overflow:hidden}.photo image{width:100%;height:100%}.photo button{position:absolute;top:8rpx;right:8rpx;width:50rpx;height:50rpx;margin:0;padding:0;border-radius:50%;background:rgba(17,29,38,.72);color:#fff;display:flex;align-items:center;justify-content:center}.photo-add{margin:0;border:2rpx dashed #bdcbd4;background:#f4f7f9;color:var(--smis-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9rpx}.photo-add text{font-size:19rpx}.submit-note{margin:20rpx 4rpx;display:flex;align-items:flex-start;gap:12rpx;color:var(--smis-text-secondary);font-size:20rpx;line-height:1.5}.submit-note .i{width:10rpx;height:10rpx;margin-top:9rpx;border-radius:50%;background:var(--smis-safety)}.submit{width:100%;min-height:98rpx;margin:0;border-radius:20rpx;background:var(--smis-hero-gradient);color:#fff;font-size:28rpx;font-weight:700}.submit[disabled]{opacity:.6}</style>
+
+<template>
+  <view class="page-shell report-page">
+    <SmisTopBar title="现场随手拍" eyebrow="QUICK HAZARD REPORT" subtitle="拍照留证，隐患直达闭环" />
+
+    <view class="page-body report-body">
+      <view v-if="loading" class="loading surface-card" aria-live="polite">
+        <wd-loading color="#4f46e5" />
+        <text>正在加载上报信息…</text>
+      </view>
+
+      <template v-else>
+        <view class="reporter surface-card">
+          <view class="reporter__avatar">{{ (profileStore.profile?.employeeName || '安').slice(-1) }}</view>
+          <view class="reporter__copy">
+            <text>{{ profileStore.profile?.employeeName || '当前登录用户' }}</text>
+            <text class="small">{{ profileStore.profile?.organizationName || '请先选择所属组织' }}</text>
+          </view>
+          <view class="reporter__verified"><SmisIcon name="check" size="22rpx" />实名</view>
+        </view>
+
+        <wd-form ref="formRef" :model="form" :rules="rules" error-type="toast">
+          <SmisFormSection title="隐患位置" description="选择业务归属，并记录可复核的现场位置" icon="location">
+            <view class="form-stack">
+              <wd-picker
+                v-model="form.hazardOrganizationId"
+                custom-class="smis-form-control"
+                label="所属组织"
+                title="选择隐患所属组织"
+                placeholder="请选择所属组织…"
+                prop="hazardOrganizationId"
+                required
+                clearable
+                root-portal
+                :columns="organizationOptions"
+                value-key="value"
+                label-key="label"
+              />
+              <wd-picker
+                v-model="form.siteId"
+                custom-class="smis-form-control"
+                label="场所区域"
+                title="选择场所区域"
+                :placeholder="siteOptions.length ? '请选择场所区域…' : '暂无可用场所'"
+                prop="siteId"
+                required
+                clearable
+                root-portal
+                :disabled="!siteOptions.length"
+                :columns="siteOptions"
+                value-key="value"
+                label-key="label"
+              />
+              <view v-if="!siteOptions.length" class="option-warning">
+                <SmisIcon name="notice" size="27rpx" />
+                <text>当前租户还没有维护场所，请先在 Web 端基础资料中新增场所。</text>
+              </view>
+              <SmisLocationField
+                v-model="form.location"
+                required
+                @update:locating="locating = $event"
+              />
+            </view>
+          </SmisFormSection>
+
+          <SmisFormSection title="隐患情况" description="描述问题、风险后果与建议措施" icon="risk">
+            <view class="form-stack">
+              <wd-picker
+                v-model="form.hazardLevel"
+                custom-class="smis-form-control"
+                label="隐患等级"
+                title="选择隐患等级"
+                placeholder="请选择隐患等级…"
+                prop="hazardLevel"
+                required
+                root-portal
+                :columns="hazardLevelOptions"
+                value-key="value"
+                label-key="label"
+              />
+              <SmisTextareaField
+                v-model="form.description"
+                label="隐患描述"
+                hint="说明风险状态与后果"
+                prop="description"
+                required
+                :maxlength="500"
+                placeholder="描述危险状态、可能后果与影响范围…"
+              />
+              <SmisTextareaField
+                v-model="form.rectificationSuggestion"
+                label="整改建议"
+                hint="选填"
+                compact
+                :maxlength="300"
+                placeholder="建议隔离、修复或管控措施…"
+              />
+            </view>
+          </SmisFormSection>
+        </wd-form>
+
+        <SmisFormSection title="现场证据" description="照片会进入后续核准、整改与验收记录" icon="camera">
+          <SmisEvidenceUpload
+            v-model="form.imageUrls"
+            v-model:uploading="uploading"
+            :token="auth.token"
+            folder="smis/hazard"
+            title="现场照片"
+            description="至少 1 张，建议同时拍摄全景与问题细节"
+            required
+            :max="6"
+          />
+        </SmisFormSection>
+
+        <view class="submit-note">
+          <view class="i" />
+          <text>提交后进入“待核准”，后续整改和验收节点会完整留痕。</text>
+        </view>
+        <view class="report-action-dock">
+          <wd-button
+            custom-class="smis-primary-action report-submit"
+            type="primary"
+            block
+            :round="false"
+            :loading="submitting"
+            :disabled="submitting || uploading || locating"
+            @click="submit"
+          >
+            提交隐患上报
+          </wd-button>
+        </view>
+      </template>
+    </view>
+    <SmisBottomNav active="quick" />
+  </view>
+</template>
+
+<style scoped lang="scss">
+.report-body { padding-top: 26rpx; padding-bottom: calc(316rpx + env(safe-area-inset-bottom)) !important; }
+.loading { min-height: 340rpx; display: flex; align-items: center; justify-content: center; gap: 14rpx; color: var(--smis-text-secondary); }
+.reporter { margin-bottom: 18rpx; padding: 22rpx; display: flex; align-items: center; gap: 16rpx; }
+.reporter__avatar { width: 66rpx; height: 66rpx; flex: 0 0 66rpx; border-radius: 20rpx; background: var(--smis-primary-soft); color: var(--smis-primary); font-size: 27rpx; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.reporter__copy { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.reporter__copy > text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 25rpx; font-weight: 800; }
+.reporter__copy .small { margin-top: 4rpx; color: var(--smis-text-muted); font-size: 20rpx; font-weight: 500; }
+.reporter__verified { height: 48rpx; padding: 0 14rpx; border-radius: 999rpx; background: #e4f2eb; color: var(--smis-success); display: flex; align-items: center; gap: 5rpx; font-size: 18rpx; font-weight: 800; }
+.form-stack { display: flex; flex-direction: column; gap: 14rpx; }
+:deep(.smis-form-control) { overflow: hidden; border: 1rpx solid var(--smis-control-border); border-radius: var(--smis-control-radius); background: var(--smis-control-bg); }
+:deep(.smis-form-control .wd-cell) { padding: 20rpx !important; }
+:deep(.smis-form-control .wd-cell__title) { color: var(--smis-text-secondary); font-size: 21rpx; font-weight: 700; }
+:deep(.smis-form-control .wd-cell__value) { color: var(--smis-text); font-size: 24rpx; }
+.option-warning { padding: 16rpx; border-radius: 14rpx; background: #fff7e8; color: #9a6611; display: flex; align-items: flex-start; gap: 10rpx; font-size: 20rpx; line-height: 1.5; }
+.submit-note { margin: 20rpx 4rpx 0; display: flex; align-items: flex-start; gap: 12rpx; color: var(--smis-text-secondary); font-size: 19rpx; line-height: 1.5; }
+.submit-note .i { width: 10rpx; height: 10rpx; flex: 0 0 10rpx; margin-top: 9rpx; border-radius: 50%; background: var(--smis-safety); }
+.report-action-dock { position: fixed; z-index: 26; left: 50%; bottom: calc(148rpx + env(safe-area-inset-bottom)); width: min(calc(100vw - 56rpx), 484px); box-sizing: border-box; padding: 12rpx; border: 1rpx solid rgba(220, 227, 238, .88); border-radius: 24rpx; background: rgba(255, 255, 255, .96); box-shadow: 0 16rpx 42rpx rgba(29, 39, 66, .16); transform: translateX(-50%); backdrop-filter: blur(24rpx) saturate(150%); }
+:deep(.report-submit) { width: 100% !important; }
+</style>

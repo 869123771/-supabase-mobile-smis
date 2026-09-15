@@ -40,7 +40,7 @@ Avoid negative-margin card overlaps below headers. Summary cards begin after the
 - Page titles: `36–40rpx`, weight 800.
 - Section titles: `29–31rpx`, weight 800.
 - Card titles: `27–29rpx`, weight 750–800.
-- Body: `24–26rpx`; metadata: `20–23rpx`.
+- Body: `23–25rpx`; metadata: `18–20rpx`. Muted copy must remain subordinate to titles and values.
 - Numeric summaries use tabular numerals and weight 800.
 - Eyebrows are short uppercase operational labels, `20rpx`, wide tracking. Never use them as the only page title.
 
@@ -65,6 +65,14 @@ Avoid negative-margin card overlaps below headers. Summary cards begin after the
 - Use inset gray surfaces for locations, dates or secondary facts.
 - Status rails or dots may reinforce state; never rely on color alone.
 - Lists use `18rpx` gaps instead of stacked divider-only rows.
+- Long business lists load in `15`-record pages, support pull-to-refresh and fetch the next page near the bottom. Show both loading-more and end-of-list feedback.
+- Date tiles reserve a fixed, non-shrinking width; day and month each use a centered one-line box with tabular numerals.
+
+### Search and status filters
+
+- Use `SmisSearchBar` for keyword searches and `SmisStatusTabs` for status filters.
+- Status filters stay on one horizontal rail and scroll when necessary; never stack into a tall vertical filter block on mobile.
+- Search, filter and result cards remain separate surfaces so filters do not visually merge with the first record.
 
 ### Forms
 
@@ -72,7 +80,12 @@ Avoid negative-margin card overlaps below headers. Summary cards begin after the
 - Labels remain visible; placeholder text gives examples, not labels.
 - Required fields use `*`; destructive or rejection actions are visually distinct.
 - Photo upload is a first-class evidence area with clear count and removable thumbnails.
+- Use `SmisLocationField` for automatic location capture, editable detail text and an embedded point preview; avoid launching an unstyled system location page.
+- Use `SmisEvidenceUpload` for camera/album selection, upload progress, quota, preview and removal.
+- Site selection uses the tenant-wide hierarchy. Organization assignment and physical site selection are related business facts, but a department without directly-owned sites must not produce an empty picker.
 - Primary submit action comes last and is not obscured by bottom navigation.
+- Multiline fields use `SmisTextareaField`: visible label/hint, inset control tone, explicit native-textarea height, compact character-count rail and a focus-within ring. Use the compact variant for secondary notes and abnormal-item remarks.
+- On tab-root forms, keep the primary submit action in a translucent dock immediately above bottom navigation and reserve both layers in page padding.
 
 ### Button alignment
 
@@ -109,4 +122,6 @@ Avoid negative-margin card overlaps below headers. Summary cards begin after the
 - Header: `src/components/SmisTopBar.vue`.
 - Navigation: `src/components/SmisBottomNav.vue`.
 - List record pattern: `src/components/SmisTaskCard.vue`.
+- Search/status/list feedback: `src/components/SmisSearchBar.vue`, `src/components/SmisStatusTabs.vue`, `src/components/SmisListFooter.vue`.
+- Form sections, location and evidence: `src/components/SmisFormSection.vue`, `src/components/SmisLocationField.vue`, `src/components/SmisEvidenceUpload.vue`.
 - Empty state: `src/components/SmisEmpty.vue`.
